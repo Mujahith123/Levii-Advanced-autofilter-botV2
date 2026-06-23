@@ -1,1 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{file_name}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --card: #16161f;
+      --border: rgba(255,255,255,0.07);
+      --accent: #7c3aed;
+      --accent2: #a855f7;
+      --gold: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 16px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(124,58,237,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168,85,247,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-brand {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.1rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--accent2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none; letter-spacing: 2px;
+    }
+    .nav-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.3);
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 1px;
+      color: var(--gold);
+    }
+    .wrapper {
+      position: relative; z-index: 1;
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: 80px 16px 40px;
+      gap: 20px;
+    }
+    /* VIDEO PLAYER */
+    .player-container {
+      width: 100%; max-width: 860px;
+      background: #000;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(124,58,237,0.2);
+      border: 1px solid var(--border);
+    }
+    video {
+      width: 100%;
+      display: block;
+      max-height: 70vh;
+      background: #000;
+    }
+    /* FILE INFO CARD */
+    .info-card {
+      width: 100%; max-width: 860px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-size: 0.95rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 6px;
+    }
+    .file-meta { font-size: 0.78rem; color: var(--muted); }
+    .file-meta span { color: var(--accent2); }
+    .action-btns { display: flex; gap: 10px; flex-shrink: 0; }
+    .dl-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: 12px;
+      padding: 11px 20px; color: white;
+      font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+      transition: all 0.2s;
+    }
+    .dl-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(124,58,237,0.5); }
+    .tg-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 16px; color: var(--text);
+      font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .tg-btn:hover { background: rgba(255,255,255,0.09); border-color: var(--accent2); }
+    footer {
+      position: relative; z-index: 1;
+      text-align: center; padding: 20px;
+      font-size: 0.72rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent2); text-decoration: none; }
+    @media (max-width: 600px) {
+      .info-card { flex-direction: column; align-items: flex-start; }
+      .action-btns { width: 100%; }
+      .dl-btn, .tg-btn { flex: 1; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
 
+<nav>
+  <a class="nav-brand" href="https://t.me/vijayrio18_bot">THALAPATHY</a>
+  <div class="nav-badge"><i class="fa-solid fa-crown"></i> PREMIUM</div>
+</nav>
+
+<div class="wrapper">
+
+  <!-- VIDEO PLAYER -->
+  <div class="player-container">
+    <video
+      controls
+      autoplay
+      preload="metadata"
+      controlslist="nodownload"
+      src="{{file_url}}"
+    >
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+  <!-- FILE INFO -->
+  <div class="info-card">
+    <div class="file-info">
+      <div class="file-name"><i class="fa-solid fa-film" style="color:var(--accent2);margin-right:8px;"></i>{{file_name}}</div>
+      <div class="file-meta">Size: <span>{{file_size}}</span></div>
+    </div>
+    <div class="action-btns">
+      <a class="dl-btn" href="{{file_url}}" download>
+        <i class="fa-solid fa-download"></i> Download
+      </a>
+      <a class="tg-btn" href="https://t.me/vijayrio18_bot" target="_blank">
+        <i class="fa-brands fa-telegram"></i> Bot
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  &copy; 2024 <a href="https://t.me/+2DJ_3Sai_Rs2MTE1">TEAM RIO</a> — All Rights Reserved
+</footer>
+
+</body>
+</html>

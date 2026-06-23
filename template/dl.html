@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{file_name}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0907;
+      --border: rgba(243,236,224,0.07);
+      --border-hi: rgba(227,196,130,0.34);
+      --accent: #b3873f;
+      --accent2: #e3c073;
+      --accent-soft: rgba(179,135,63,0.16);
+      --gold: #f0d28a;
+      --gold-soft: rgba(240,210,138,0.10);
+      --ruby: #c1393a;
+      --text: #f3ece0;
+      --muted: #998c74;
+      --radius: 12px;
+      /* glass surfaces */
+      --glass-bg: rgba(19,16,12,0.56);
+      --glass-bg-soft: rgba(14,12,9,0.42);
+      --glass-border: rgba(227,196,130,0.10);
+      /* projector-beam + emerald-velvet glow, used once as the page's signature */
+      --glow-1: #a8782f;
+      --glow-2: #1f5c46;
+      --font-display: 'Fraunces', serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── CINEMATIC BACKDROP (signature element) ──
+       A slow-drifting warm projector beam and a deep emerald-velvet glow,
+       positioned behind where the screen sits — like light spilling from
+       a projector booth onto curtains in a private screening room. Slow,
+       quiet motion; this is the page's one bold move, everything else
+       around it stays disciplined. */
+    .backdrop-glow {
+      position: fixed; inset: 0; z-index: 0;
+      pointer-events: none; overflow: hidden;
+    }
+    .backdrop-glow::before,
+    .backdrop-glow::after {
+      content: '';
+      position: absolute;
+      width: 60vw; height: 60vw; max-width: 720px; max-height: 720px;
+      border-radius: 50%;
+      filter: blur(110px);
+      opacity: 0.4;
+      animation: drift 28s ease-in-out infinite alternate;
+    }
+    .backdrop-glow::before {
+      top: -10%; left: 5%;
+      background: radial-gradient(circle, var(--glow-1) 0%, transparent 70%);
+    }
+    .backdrop-glow::after {
+      bottom: -15%; right: 0%;
+      background: radial-gradient(circle, var(--glow-2) 0%, transparent 70%);
+      animation-delay: -13s;
+      opacity: 0.32;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(4%, 6%) scale(1.08); }
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 70% at 50% 28%, transparent 45%, rgba(0,0,0,0.5) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+      background-size: 100% 100%, 140px 140px;
+      pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .backdrop-glow::before, .backdrop-glow::after { animation: none; }
+      .file-info, .premium-bar, .actions { animation: none; }
+    }
+
+    .ctrl-btn:focus-visible,
+    .app-btn:focus-visible,
+    .dl-btn:focus-visible,
+    .audio-track-btn:focus-visible,
+    .nav-brand:focus-visible {
+      outline: 2px solid var(--accent2);
+      outline-offset: 2px;
+    }
+
+    /* ── NAVBAR (glass) ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 24px;
+      background: var(--glass-bg-soft);
+      backdrop-filter: blur(28px) saturate(150%);
+      -webkit-backdrop-filter: blur(28px) saturate(150%);
+      border-bottom: 1px solid var(--glass-border);
+      box-shadow: 0 2px 16px -6px rgba(179,135,63,0.22);
+    }
+
+    .nav-brand {
+      font-family: var(--font-display);
+      font-style: italic; font-weight: 600;
+      font-size: 1.3rem;
+      color: var(--accent2); /* fallback if background-clip:text is unsupported */
+      background: linear-gradient(100deg, var(--accent2) 10%, var(--gold) 60%, var(--accent2) 110%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      text-decoration: none; letter-spacing: 0.3px;
+    }
+
+    .nav-badge {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(227,196,130,0.06);
+      border: 1px solid var(--glass-border);
+      padding: 6px 13px; border-radius: 99px;
+      font-family: var(--font-mono);
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 1.6px;
+      color: var(--accent2); text-transform: uppercase;
+    }
+    .nav-badge i { font-size: 0.6rem; color: var(--ruby); }
+
+    /* ── MAIN WRAPPER ── */
+    .wrapper {
+      position: relative; z-index: 1;
+      max-width: 960px; margin: 0 auto;
+      padding: 90px 16px 60px;
+    }
+
+    /* ── PLAYER CARD (glass + gilt edge) ── */
+    .player-card {
+      background: linear-gradient(165deg, rgba(243,236,224,0.05), transparent 45%), var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        0 1px 0 0 rgba(243,236,224,0.10) inset,
+        0 50px 110px -25px rgba(0,0,0,0.85),
+        0 0 90px -18px rgba(179,135,63,0.20),
+        0 0 0 1px rgba(179,135,63,0.10);
+      animation: cardIn 0.8s cubic-bezier(0.16,1,0.3,1);
+    }
+    .player-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(227,196,130,0.55), transparent);
+      z-index: 2; pointer-events: none;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(14px) scale(0.99); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── VIDEO ── */
+    .video-wrap {
+      position: relative;
+      background: #000;
+    }
+
+    #mainVideo {
+      width: 100%; display: block;
+      max-height: 520px;
+      background: #000;
+    }
+
+    /* viewfinder corner brackets — a quiet nod to the projector booth */
+    .frame-corner {
+      position: absolute; width: 26px; height: 26px;
+      border: 0 solid rgba(227,196,130,0.6);
+      pointer-events: none; z-index: 3;
+      filter: drop-shadow(0 0 5px rgba(227,196,130,0.25));
+    }
+    .frame-corner.tl { top: 12px; left: 12px;  border-top-width: 1px; border-left-width: 1px;  border-radius: 3px 0 0 0; }
+    .frame-corner.tr { top: 12px; right: 12px; border-top-width: 1px; border-right-width: 1px; border-radius: 0 3px 0 0; }
+    .frame-corner.bl { bottom: 12px; left: 12px;  border-bottom-width: 1px; border-left-width: 1px;  border-radius: 0 0 0 3px; }
+    .frame-corner.br { bottom: 12px; right: 12px; border-bottom-width: 1px; border-right-width: 1px; border-radius: 0 0 3px 0; }
+    .video-wrap::after {
+      content: '';
+      position: absolute; inset: 0; z-index: 2; pointer-events: none;
+      box-shadow: inset 0 0 80px 18px rgba(0,0,0,0.5);
+    }
+
+    /* ── CUSTOM CONTROLS (glass) ── */
+    .controls {
+      background: linear-gradient(to top, rgba(10,9,7,0.97) 0%, rgba(10,9,7,0.55) 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 13px 16px 15px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      position: relative; height: 5px;
+      background: rgba(243,236,224,0.14);
+      border-radius: 99px; cursor: pointer; margin-bottom: 12px;
+    }
+    .progress-buf {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: rgba(243,236,224,0.2); border-radius: 99px;
+      width: 0%; transition: width 0.3s;
+    }
+    .progress-fill {
+      position: absolute; top: 0; left: 0; height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 99px; width: 0%;
+    }
+    .progress-thumb {
+      position: absolute; top: 50%; transform: translate(-50%,-50%);
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--text); left: 0%;
+      box-shadow: 0 0 10px rgba(227,196,130,0.7), 0 0 2px rgba(255,255,255,0.8);
+      transition: transform 0.15s;
+    }
+    .progress-wrap:hover .progress-thumb { transform: translate(-50%,-50%) scale(1.3); }
+
+    /* Time tooltip */
+    .time-tip {
+      position: absolute; bottom: 18px;
+      background: rgba(10,9,7,0.9); color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;
+      pointer-events: none; display: none; transform: translateX(-50%);
+    }
+
+    /* Control row */
+    .ctrl-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .ctrl-btn {
+      background: none; border: none; color: var(--text);
+      cursor: pointer; padding: 6px 8px; border-radius: 8px;
+      font-size: 1rem; transition: background 0.15s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ctrl-btn:hover { background: rgba(243,236,224,0.08); }
+    .ctrl-btn:active { transform: scale(0.9); }
+    .ctrl-btn.accent { color: var(--accent2); }
+
+    .skip-btn {
+      font-size: 0.65rem; font-weight: 700;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1px; padding: 4px 6px;
+    }
+    .skip-btn i { font-size: 0.85rem; }
+
+    /* Volume */
+    .vol-wrap { display: flex; align-items: center; gap: 6px; }
+    #volSlider {
+      -webkit-appearance: none;
+      width: 70px; height: 4px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent2) 0%, rgba(243,236,224,0.2) 0%);
+      outline: none; cursor: pointer;
+    }
+    #volSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px; height: 12px;
+      border-radius: 50%; background: var(--text);
+    }
+
+    .time-display {
+      font-family: var(--font-mono);
+      font-size: 0.72rem; color: rgba(243,236,224,0.7);
+      margin-left: 4px; white-space: nowrap; letter-spacing: 0.2px;
+    }
+
+    /* Audio tracks */
+    .audio-panel {
+      background: rgba(243,236,224,0.025);
+      border-top: 1px solid var(--border);
+      padding: 11px 16px;
+      display: none;
+    }
+    .audio-panel.open { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .audio-label {
+      font-family: var(--font-mono);
+      font-size: 0.66rem; color: var(--muted); font-weight: 600;
+      letter-spacing: 1.4px; text-transform: uppercase;
+    }
+    .audio-track-btn {
+      background: rgba(243,236,224,0.05); border: 1px solid var(--border);
+      color: var(--text); padding: 5px 13px; border-radius: 99px;
+      font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+    }
+    .audio-track-btn.active, .audio-track-btn:hover {
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-color: var(--accent); color: #14110b;
+    }
+
+    /* ── FILE INFO ── */
+    .file-info {
+      padding: 28px 26px 8px;
+      display: flex; align-items: flex-start; gap: 16px;
+      animation: revealUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+    }
+    .file-icon {
+      width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+      background: radial-gradient(circle at 35% 28%, rgba(255,250,240,0.22), transparent 55%), linear-gradient(150deg, var(--accent2), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.15rem; color: #14110b;
+      border: 1px solid rgba(243,236,224,0.22);
+      box-shadow: 0 6px 20px rgba(179,135,63,0.30), 0 1px 0 rgba(255,255,255,0.25) inset;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--accent2);
+      margin-bottom: 5px;
+    }
+    .file-meta h2 {
+      font-family: var(--font-display);
+      font-size: 1.06rem; font-weight: 600; line-height: 1.5;
+      letter-spacing: 0.2px; word-break: break-word;
+    }
+    .file-meta .live-row {
+      display: flex; align-items: center; gap: 7px;
+      margin-top: 7px; font-family: var(--font-mono);
+      font-size: 0.7rem; color: var(--muted);
+    }
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--ruby);
+      box-shadow: 0 0 0 0 rgba(193,57,58,0.6);
+      animation: livePulse 2.4s infinite;
+    }
+    @keyframes livePulse {
+      0%   { box-shadow: 0 0 0 0 rgba(193,57,58,0.55); }
+      70%  { box-shadow: 0 0 0 6px rgba(193,57,58,0); }
+      100% { box-shadow: 0 0 0 0 rgba(193,57,58,0); }
+    }
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── ACTION BUTTONS ── */
+    .actions {
+      padding: 20px 26px 28px; display: flex; flex-direction: column; gap: 16px;
+      animation: revealUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.52s both;
+    }
+
+    .action-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem; font-weight: 600; letter-spacing: 2px;
+      color: var(--muted); text-transform: uppercase; margin-bottom: 6px;
+    }
+
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .app-btn {
+      display: flex; align-items: center; gap: 12px;
+      background: linear-gradient(165deg, rgba(243,236,224,0.05), transparent 55%), rgba(243,236,224,0.025);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius); padding: 13px 15px;
+      cursor: pointer; text-decoration: none; color: var(--text);
+      transition: border-color 0.25s cubic-bezier(0.16,1,0.3,1), transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s cubic-bezier(0.16,1,0.3,1);
+      font-size: 0.82rem; font-weight: 500;
+    }
+    .app-btn:hover {
+      border-color: var(--border-hi);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45), 0 0 26px -4px rgba(179,135,63,0.30);
+    }
+    .app-btn:active { transform: translateY(0); }
+    .icon-coin {
+      width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(160deg, rgba(243,236,224,0.10), rgba(243,236,224,0.02));
+      border: 1px solid var(--glass-border);
+    }
+    .icon-coin img {
+      width: 19px; height: 19px; object-fit: contain;
+      filter: saturate(0.5) brightness(1.08) contrast(1.05);
+    }
+    .app-btn .btn-sub { font-size: 0.64rem; color: var(--muted); margin-top: 1px; }
+
+    .dl-btn {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
+      border: none; border-radius: var(--radius);
+      padding: 15px 20px; color: #14110b;
+      font-size: 0.84rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      box-shadow: 0 14px 36px rgba(179,135,63,0.32), 0 1px 0 rgba(255,255,255,0.35) inset;
+      transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s cubic-bezier(0.16,1,0.3,1);
+      position: relative; overflow: hidden;
+    }
+    .dl-btn::after {
+      content: '';
+      position: absolute; top: 0; left: -150%;
+      width: 60%; height: 100%;
+      background: linear-gradient(75deg, transparent, rgba(255,255,255,0.45), transparent);
+      transform: skewX(-20deg);
+    }
+    .dl-btn:hover::after { animation: shimmer 1.1s ease forwards; }
+    .dl-btn:hover { transform: translateY(-2px); box-shadow: 0 18px 44px rgba(179,135,63,0.42), 0 1px 0 rgba(255,255,255,0.35) inset; }
+    .dl-btn:active { transform: translateY(0); }
+    @keyframes shimmer {
+      from { left: -150%; }
+      to   { left: 150%; }
+    }
+
+    /* ── PREMIUM BADGE (metallic foil) ── */
+    .premium-bar {
+      margin: 6px 26px 24px;
+      background: linear-gradient(120deg, var(--gold-soft), transparent 70%), rgba(243,236,224,0.02);
+      border: 1px solid rgba(227,196,130,0.25);
+      border-radius: 11px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 0.76rem; color: #d9bd72;
+      letter-spacing: 0.2px;
+      position: relative; overflow: hidden;
+      animation: revealUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s both;
+    }
+    .premium-bar::after {
+      content: '';
+      position: absolute; top: 0; left: -150%;
+      width: 50%; height: 100%;
+      background: linear-gradient(75deg, transparent, rgba(255,255,255,0.16), transparent);
+      transform: skewX(-20deg);
+      animation: shimmer 5s ease-in-out infinite; animation-delay: 1.2s;
+    }
+    .premium-bar i {
+      font-size: 0.82rem; color: var(--gold); flex-shrink: 0;
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(240,210,138,0.08);
+      border: 1px solid rgba(227,196,130,0.32);
+    }
+    .premium-bar b {
+      color: var(--gold); /* fallback if background-clip:text is unsupported */
+      background: linear-gradient(135deg, var(--gold), #fff3d6 60%, var(--gold));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+
+    /* ── FULLSCREEN FIX ── */
+    #mainVideo:-webkit-full-screen { width: 100%; height: 100%; }
+    #mainVideo:-moz-full-screen { width: 100%; height: 100%; }
+    #mainVideo:fullscreen { width: 100%; height: 100%; }
+
+    /* ── TOAST (PLAYit fallback) ── */
+    .app-toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translate(-50%, 16px);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      border: 1px solid var(--glass-border);
+      color: var(--text); font-size: 0.8rem; font-weight: 500;
+      padding: 12px 18px; border-radius: 12px; max-width: 90%;
+      box-shadow: 0 16px 44px rgba(0,0,0,0.6), 0 0 30px -8px rgba(179,135,63,0.25);
+      opacity: 0; pointer-events: none; z-index: 999;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+    .app-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 540px) {
+      .btn-grid { grid-template-columns: 1fr; }
+      .ctrl-row { gap: 4px; }
+      #volSlider { width: 50px; }
+    }
+  </style>
+</head>
+<body>
+<div class="backdrop-glow" aria-hidden="true"></div>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="nav-brand" href="https://t.me/vijayrio18_bot">THALAPATHY</a>
+  <div class="nav-badge"><i class="fa-solid fa-bolt"></i> STREAM</div>
+</nav>
+
+<div class="wrapper">
+  <div class="player-card">
+
+    <!-- VIDEO -->
+    <div class="video-wrap">
+      <video id="mainVideo" src="{{file_url}}" preload="metadata" playsinline></video>
+      <span class="frame-corner tl" aria-hidden="true"></span>
+      <span class="frame-corner tr" aria-hidden="true"></span>
+      <span class="frame-corner bl" aria-hidden="true"></span>
+      <span class="frame-corner br" aria-hidden="true"></span>
+    </div>
+
+    <!-- CUSTOM CONTROLS -->
+    <div class="controls">
+      <!-- Progress -->
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-buf" id="progressBuf"></div>
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="progress-thumb" id="progressThumb"></div>
+        <div class="time-tip" id="timeTip"></div>
+      </div>
+
+      <!-- Buttons row -->
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="playBtn" onclick="togglePlay()" title="Play/Pause">
+          <i class="fa-solid fa-play" id="playIcon"></i>
+        </button>
+
+        <button class="ctrl-btn skip-btn" onclick="skip(-10)" title="Rewind 10s">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>10s</span>
+        </button>
+
+        <button class="ctrl-btn skip-btn" onclick="skip(10)" title="Forward 10s">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>10s</span>
+        </button>
+
+        <div class="vol-wrap">
+          <button class="ctrl-btn" onclick="toggleMute()" id="muteBtn" title="Mute">
+            <i class="fa-solid fa-volume-high" id="volIcon"></i>
+          </button>
+          <input type="range" id="volSlider" min="0" max="1" step="0.02" value="1" oninput="setVolume(this.value)" />
+        </div>
+
+        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+
+        <div style="flex:1"></div>
+
+        <button class="ctrl-btn accent" onclick="toggleAudioPanel()" title="Audio tracks">
+          <i class="fa-solid fa-headphones"></i>
+        </button>
+
+        <button class="ctrl-btn" onclick="togglePip()" title="Picture in Picture">
+          <i class="fa-solid fa-up-right-from-square"></i>
+        </button>
+
+        <button class="ctrl-btn" onclick="toggleFS()" title="Fullscreen">
+          <i class="fa-solid fa-expand" id="fsIcon"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- AUDIO PANEL -->
+    <div class="audio-panel" id="audioPanel">
+      <span class="audio-label"><i class="fa-solid fa-music"></i> Audio</span>
+      <div id="audioTracks"></div>
+    </div>
+
+    <!-- FILE INFO -->
+    <div class="file-info">
+      <div class="file-icon"><i class="fa-solid fa-film"></i></div>
+      <div class="file-meta">
+        <div class="eyebrow">Now Streaming</div>
+        <h2>{{file_name}}</h2>
+        <div class="live-row"><span class="live-dot"></span><span id="fileMeta">Reading stream info&hellip;</span></div>
+      </div>
+    </div>
+
+    <!-- PREMIUM BADGE -->
+    <div class="premium-bar">
+      <i class="fa-solid fa-crown"></i>
+      <span><b>Premium Stream</b> &mdash; Fast CDN &bull; No buffering &bull; HD Quality</span>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions">
+
+      <!-- Download -->
+      <div class="action-label">Download</div>
+      <a class="dl-btn" href="{{file_url}}" download>
+        <i class="fa-solid fa-download"></i> Fast Download
+      </a>
+
+      <!-- Open in app -->
+      <div class="action-label">Open in App</div>
+      <div class="btn-grid">
+
+        <a class="app-btn" id="vlcBtn" href="#">
+          <span class="icon-coin"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/VLC_Icon.svg/512px-VLC_Icon.svg.png" alt="VLC" /></span>
+          <div><div>VLC Player</div><div class="btn-sub">Watch in VLC</div></div>
+        </a>
+
+        <a class="app-btn" id="mxBtn" href="#">
+          <span class="icon-coin"><img src="https://i.postimg.cc/sx4Msv4T/mx.png" alt="MX" /></span>
+          <div><div>MX Player</div><div class="btn-sub">Watch in MX</div></div>
+        </a>
+
+        <a class="app-btn" id="playitBtn" href="#">
+          <span class="icon-coin"><img src="https://i.postimg.cc/RVGWYJFF/playit.png" alt="PLAYit" /></span>
+          <div><div>PLAYit</div><div class="btn-sub">Watch in PLAYit</div></div>
+        </a>
+
+        <a class="app-btn" id="kmBtn" href="#">
+          <span class="icon-coin"><img src="https://i.postimg.cc/wT9tFQ9Z/km.png" alt="KM" /></span>
+          <div><div>KM Player</div><div class="btn-sub">Watch in KM</div></div>
+        </a>
+
+      </div>
+    </div>
+
+  </div><!-- /player-card -->
+</div><!-- /wrapper -->
+
+<script>
+  const video = document.getElementById('mainVideo');
+  const rawUrl = '{{file_url}}';
+  // file_name may contain quotes/apostrophes (common in real file names) — read it
+  // from a data attribute instead of inlining it into a JS string literal, so it
+  // can never break this script.
+  const fileName = document.title;
+
+  // ── APP LINKS ──
+  // VLC, MX Player, and KM Player all support being launched directly via an
+  // Android "intent:" URI that names their real package — this is how each
+  // app documents accepting an external link. PLAYit has no such mechanism,
+  // so its button instead copies the link and opens the app for a manual paste.
+  const intentSuffix = encodeURIComponent(rawUrl) + '#Intent;scheme=https;S.title=' + encodeURIComponent(fileName) + ';';
+
+  document.getElementById('vlcBtn').href =
+    'intent://' + intentSuffix + 'package=org.videolan.vlc;type=video/*;S.browser_fallback_url=' +
+    encodeURIComponent('https://play.google.com/store/apps/details?id=org.videolan.vlc') + ';end';
+
+  document.getElementById('mxBtn').href =
+    'intent://' + intentSuffix + 'package=com.mxtech.videoplayer.ad;type=video/*;S.browser_fallback_url=' +
+    encodeURIComponent('https://play.google.com/store/apps/details?id=com.mxtech.videoplayer.ad') + ';end';
+
+  document.getElementById('kmBtn').href =
+    'intent://' + intentSuffix + 'package=com.kmplayer;type=video/*;S.browser_fallback_url=' +
+    encodeURIComponent('https://play.google.com/store/apps/details?id=com.kmplayer') + ';end';
+
+  // PLAYit has no public "open with URL" intent — it only accepts links pasted
+  // into its own in-app search bar. Best-effort: try the same intent pattern in
+  // case a build of the app responds to it, then always fall back to copying the
+  // link with instructions, so the button is never a dead tap.
+  const playitBtn = document.getElementById('playitBtn');
+  playitBtn.removeAttribute('href');
+  playitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const tryIntent = 'intent://' + intentSuffix + 'package=com.playit.videoplayer;type=video/*;end';
+    const fallback = () => copyLinkWithToast('PLAYit doesn\'t support opening links directly. Link copied — open PLAYit, then paste it into its search bar to stream.');
+    // Give the intent a brief window to hand off to the app; if the page is
+    // still visible shortly after, assume it failed and fall back.
+    const visibilityCheck = setTimeout(() => { if (document.hasFocus()) fallback(); }, 1200);
+    window.addEventListener('blur', () => clearTimeout(visibilityCheck), { once: true });
+    window.location.href = tryIntent;
+  });
+
+  function copyLinkWithToast(message) {
+    navigator.clipboard.writeText(rawUrl).catch(() => {});
+    showToast(message);
+  }
+
+  function showToast(message) {
+    let toast = document.getElementById('appToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'appToast';
+      toast.className = 'app-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
+  // ── FILE META ──
+  video.addEventListener('loadedmetadata', () => {
+    const dur = video.duration;
+    const h = Math.floor(dur / 3600);
+    const m = Math.floor((dur % 3600) / 60);
+    const s = Math.floor(dur % 60);
+    const durStr = h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`;
+    document.getElementById('fileMeta').innerHTML = 'Streaming &middot; ' + durStr;
+    updateAudioTracks();
+  });
+
+  // ── PLAY / PAUSE ──
+  function togglePlay() {
+    if (video.paused) { video.play(); } else { video.pause(); }
+  }
+  video.addEventListener('play',  () => document.getElementById('playIcon').className = 'fa-solid fa-pause');
+  video.addEventListener('pause', () => document.getElementById('playIcon').className = 'fa-solid fa-play');
+
+  // ── SKIP ──
+  function skip(sec) {
+    video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + sec));
+  }
+
+  // ── VOLUME ──
+  function setVolume(v) {
+    video.volume = v;
+    video.muted = (v == 0);
+    updateVolIcon(v);
+    const pct = v * 100;
+    document.getElementById('volSlider').style.background =
+      `linear-gradient(90deg, var(--accent2) ${pct}%, rgba(255,255,255,0.2) ${pct}%)`;
+  }
+  function toggleMute() {
+    video.muted = !video.muted;
+    updateVolIcon(video.muted ? 0 : video.volume);
+  }
+  function updateVolIcon(v) {
+    const ic = document.getElementById('volIcon');
+    ic.className = v == 0 ? 'fa-solid fa-volume-xmark' : v < 0.5 ? 'fa-solid fa-volume-low' : 'fa-solid fa-volume-high';
+  }
+
+  // ── PROGRESS ──
+  video.addEventListener('timeupdate', updateProgress);
+  video.addEventListener('progress', updateBuffer);
+
+  function updateProgress() {
+    if (!video.duration) return;
+    const pct = (video.currentTime / video.duration) * 100;
+    document.getElementById('progressFill').style.width  = pct + '%';
+    document.getElementById('progressThumb').style.left  = pct + '%';
+    const c = fmt(video.currentTime), d = fmt(video.duration);
+    document.getElementById('timeDisplay').textContent = c + ' / ' + d;
+  }
+
+  function updateBuffer() {
+    if (!video.duration || !video.buffered.length) return;
+    const pct = (video.buffered.end(video.buffered.length - 1) / video.duration) * 100;
+    document.getElementById('progressBuf').style.width = pct + '%';
+  }
+
+  function fmt(s) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    return h > 0 ? `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` : `${m}:${String(sec).padStart(2,'0')}`;
+  }
+
+  // Click to seek
+  const pw = document.getElementById('progressWrap');
+  function seekTo(e) {
+    const rect = pw.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    video.currentTime = pct * video.duration;
+  }
+  let seeking = false;
+  pw.addEventListener('mousedown', e => { seeking = true; seekTo(e); });
+  document.addEventListener('mousemove', e => { if (seeking) seekTo(e); });
+  document.addEventListener('mouseup', () => { seeking = false; });
+  pw.addEventListener('touchstart', e => { seekTo(e.touches[0]); }, {passive:true});
+  pw.addEventListener('touchmove',  e => { seekTo(e.touches[0]); }, {passive:true});
+
+  // Hover tooltip
+  pw.addEventListener('mousemove', e => {
+    if (!video.duration) return;
+    const rect = pw.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const tip = document.getElementById('timeTip');
+    tip.style.display = 'block';
+    tip.style.left = (pct * 100) + '%';
+    tip.textContent = fmt(pct * video.duration);
+  });
+  pw.addEventListener('mouseleave', () => { document.getElementById('timeTip').style.display = 'none'; });
+
+  // ── FULLSCREEN ──
+  function toggleFS() {
+    if (!document.fullscreenElement) {
+      video.requestFullscreen && video.requestFullscreen();
+      document.getElementById('fsIcon').className = 'fa-solid fa-compress';
+    } else {
+      document.exitFullscreen && document.exitFullscreen();
+      document.getElementById('fsIcon').className = 'fa-solid fa-expand';
+    }
+  }
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement)
+      document.getElementById('fsIcon').className = 'fa-solid fa-expand';
+  });
+
+  // ── PIP ──
+  function togglePip() {
+    if (document.pictureInPictureElement) { document.exitPictureInPicture(); }
+    else if (video.requestPictureInPicture) { video.requestPictureInPicture(); }
+  }
+
+  // ── AUDIO TRACKS ──
+  function updateAudioTracks() {
+    const container = document.getElementById('audioTracks');
+    container.innerHTML = '';
+    if (video.audioTracks && video.audioTracks.length > 0) {
+      for (let i = 0; i < video.audioTracks.length; i++) {
+        const t = video.audioTracks[i];
+        const btn = document.createElement('button');
+        btn.className = 'audio-track-btn' + (t.enabled ? ' active' : '');
+        btn.textContent = t.label || t.language || ('Track ' + (i + 1));
+        btn.onclick = () => {
+          for (let j = 0; j < video.audioTracks.length; j++) video.audioTracks[j].enabled = false;
+          video.audioTracks[i].enabled = true;
+          document.querySelectorAll('.audio-track-btn').forEach((b,j) => b.classList.toggle('active', j === i));
+        };
+        container.appendChild(btn);
+      }
+      document.getElementById('audioPanel').classList.add('open');
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'audio-track-btn active';
+      btn.textContent = 'Default';
+      container.appendChild(btn);
+    }
+  }
+
+  function toggleAudioPanel() {
+    document.getElementById('audioPanel').classList.toggle('open');
+  }
+
+  // ── KEYBOARD ──
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space')       { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowRight')  { skip(10); }
+    if (e.code === 'ArrowLeft')   { skip(-10); }
+    if (e.code === 'ArrowUp')     { setVolume(Math.min(1, video.volume + 0.1)); document.getElementById('volSlider').value = video.volume; }
+    if (e.code === 'ArrowDown')   { setVolume(Math.max(0, video.volume - 0.1)); document.getElementById('volSlider').value = video.volume; }
+    if (e.code === 'KeyF')        { toggleFS(); }
+    if (e.code === 'KeyM')        { toggleMute(); }
+  });
+</script>
+</body>
+</html>
