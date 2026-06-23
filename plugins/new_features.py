@@ -13,7 +13,7 @@ from pyrogram.errors import FloodWait, UserIsBlocked, PeerIdInvalid
 
 from info import ADMINS, TMDB_API_KEY, LOG_CHANNEL
 from database.users_chats_db import db
-from database.ia_filterdb import get_recent_files, get_search_results
+from database.ia_filterdb import get_search_results
 from utils import get_size, get_settings, temp
 
 logger = logging.getLogger(__name__)
@@ -123,11 +123,4 @@ async def auto_request_callback(bot, query: CallbackQuery):
     await query.answer(
         f"✅ '{movie_name}' has been requested! You'll get a DM when it's added.",
         show_alert=True
-    )
-
-
-        text = "🆕 <b>Recently Added Movies</b>\n━━━━━━━━━━━━━━━━\n" + "\n".join(lines)
-        await sts.edit(text, disable_web_page_preview=True)
-    except Exception as e:
-        logger.exception(e)
-        await sts.edit(f"❌ Error: {e}")
+)
