@@ -1,0 +1,13 @@
+services:
+  # Web service for bot
+  - type: web
+    name: THALAPATHY-FILTER-BOT
+    env: python
+    startCommand: python3 bot.py
+    buildCommand: pip3 install --no-cache-dir -U -r requirements.txt
+    region: fra
+    plan: starter
+    numInstances: 1
+    healthCheckPath: /
+
+# End of configuration
