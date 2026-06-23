@@ -9,7 +9,7 @@ from pyrogram.errors import ChatAdminRequired, FloodWait, UserNotParticipant
 from pyrogram.types import *
 from database.ia_filterdb import (
     Media, get_file_details, unpack_new_file_id,
-    get_bad_files, get_recent_files, delete_one_across_dbs, delete_many_across_dbs,
+    get_bad_files, delete_one_across_dbs, delete_many_across_dbs,
 )
 from pymongo.errors import DuplicateKeyError
 from database.users_chats_db import db
