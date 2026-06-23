@@ -126,25 +126,6 @@ async def auto_request_callback(bot, query: CallbackQuery):
     )
 
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  Feature 4 – Recently Added Movies (/latest, /newmovies)
-# ══════════════════════════════════════════════════════════════════════════════
-
-@Client.on_message(filters.command(["latest", "newmovies"]))
-async def latest_movies_cmd(bot, message: Message):
-    """Show the last 20 indexed movies with file size info."""
-    sts = await message.reply_text("⏳ Fetching recently added movies...")
-    try:
-        files = await get_recent_files(limit=20)
-        if not files:
-            return await sts.edit("📭 No movies found in the database yet.")
-
-        lines = []
-        for i, f in enumerate(files, 1):
-            name = (f.file_name or "Unknown")[:45]
-            size = get_size(f.file_size)
-            lines.append(f"{i}. 🎬 <code>{name}</code>  [{size}]")
-
         text = "🆕 <b>Recently Added Movies</b>\n━━━━━━━━━━━━━━━━\n" + "\n".join(lines)
         await sts.edit(text, disable_web_page_preview=True)
     except Exception as e:
