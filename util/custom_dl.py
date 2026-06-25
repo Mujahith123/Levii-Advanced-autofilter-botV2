@@ -13,6 +13,17 @@ from server.exceptions import FIleNotFound
 from pyrogram.file_id import FileId, FileType, ThumbnailSource
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# The ONLY way to increase throughput is to run MORE parallel GetFile requests
+# at the same time (pipeline depth). Each in-flight request hides the ~200-400ms
+# MTProto round-trip latency of the others.
+#
+# PIPELINE_SIZE = 16 means 16 MB is being fetched concurrently at all times.
+# For a typical movie file over a good connection this keeps the buffer full.
+# Raise this further only if the server has plenty of memory and the Telegram
+# DC connection can handle it without flood-wait errors.
+# ─────────────────────────────────────────────────────────────────────────────
+PIPELINE_SIZE = 16
 
 
 class ByteStreamer:
@@ -27,9 +38,8 @@ class ByteStreamer:
             await self.generate_file_properties(id, chat_id)
             logging.debug(f"Cached file properties for message with ID {id}")
         return self.cached_file_ids[id]
-    
+
     async def generate_file_properties(self, id: int, chat_id: int = None) -> FileId:
-        # Use provided chat_id or resolve LOG_CHANNEL/STREAM_CHANNEL
         effective_chat = chat_id if chat_id else await get_stream_channel_id()
         file_id = await get_file_ids(self.client, effective_chat, id)
         logging.debug(f"Generated file ID and Unique ID for message with ID {id}")
@@ -146,57 +156,59 @@ class ByteStreamer:
         media_session = await self.generate_media_session(client, file_id)
         location = await self.get_location(file_id)
 
-        # Concurrent pipeline window — fetch PIPELINE_SIZE chunks in parallel.
-        # Telegram MTProto supports multiple in-flight requests per session;
-        # 4 concurrent fetches saturates a typical connection without overloading the DC.
-        PIPELINE_SIZE = 4
-
         async def fetch_chunk(off: int) -> bytes:
-            for attempt in range(3):
+            # Retry up to 5 times with a short progressive back-off.
+            # Transient Telegram DC errors (FloodWait excluded — those are handled
+            # by Pyrogram's sleep_threshold) usually clear within one retry.
+            for attempt in range(5):
                 try:
                     r = await media_session.send(
                         raw.functions.upload.GetFile(
-                            location=location, offset=off, limit=chunk_size
+                            location=location,
+                            offset=off,
+                            limit=chunk_size,   # 1 MB — Telegram hard cap, do not change
                         ),
                     )
                     if isinstance(r, raw.types.upload.File):
                         return r.bytes
                     return b""
                 except TimeoutError:
-                    if attempt == 2:
-                        logging.warning(f"Chunk timeout after 3 attempts at offset {off}")
+                    if attempt == 4:
+                        logging.warning(f"Chunk at offset {off} timed out after 5 attempts")
                         return b""
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.2 * (attempt + 1))   # 0.2 / 0.4 / 0.6 / 0.8 s
             return b""
 
+        current_part = 0
+
         try:
-            # Pre-launch up to PIPELINE_SIZE fetches before we even yield the first chunk.
-            # Tasks are ordered: tasks[0] is always the next chunk to yield.
+            # ── Pipeline pre-fill ──────────────────────────────────────────────
+            # Fire PIPELINE_SIZE GetFile requests before we yield the first chunk.
+            # While the caller is consuming chunk N, chunks N+1..N+PIPELINE_SIZE
+            # are already being fetched in parallel, hiding round-trip latency.
+            # tasks[0] is always the next chunk to yield (ordered).
             tasks = []
             for i in range(min(PIPELINE_SIZE, part_count)):
                 tasks.append(asyncio.create_task(fetch_chunk(offset + i * chunk_size)))
-
-            current_part = 0
-            current_offset = offset
 
             while tasks:
                 chunk = await tasks.pop(0)
 
                 if not chunk:
-                    # Cancel remaining in-flight fetches cleanly
+                    # Empty chunk = DC error or EOF — cancel in-flight fetches
                     for t in tasks:
                         t.cancel()
                     break
 
                 current_part += 1
 
-                # Launch the next fetch to keep the pipeline full
-                next_fetch_part = current_part - 1 + len(tasks) + 1
-                if next_fetch_part < part_count:
-                    next_offset = offset + next_fetch_part * chunk_size
-                    tasks.append(asyncio.create_task(fetch_chunk(next_offset)))
+                # Immediately schedule the next chunk to keep the pipeline full
+                next_part_index = current_part - 1 + len(tasks) + 1
+                if next_part_index < part_count:
+                    next_off = offset + next_part_index * chunk_size
+                    tasks.append(asyncio.create_task(fetch_chunk(next_off)))
 
-                # Apply byte cuts on first and last parts
+                # Trim the byte range on first and last chunks only
                 if part_count == 1:
                     yield chunk[first_part_cut:last_part_cut]
                 elif current_part == 1:
@@ -206,14 +218,12 @@ class ByteStreamer:
                 else:
                     yield chunk
 
-                current_offset += chunk_size
-
         except (AttributeError, ConnectionResetError):
             pass
         except TimeoutError:
-            logging.warning("Stream timed out on initial chunk request")
+            logging.warning("Stream timed out during initial fetch")
         finally:
-            logging.debug(f"Finished yielding file with {current_part} parts.")
+            logging.debug(f"Finished yielding file — delivered {current_part} of {part_count} parts.")
             work_loads[index] -= 1
 
     async def clean_cache(self) -> None:
