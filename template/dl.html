@@ -341,6 +341,32 @@
       box-shadow: inset 0 0 100px 24px rgba(0,0,0,0.55);
     }
 
+    /* Buffering spinner overlay — shown while the browser waits for data */
+    .buffer-overlay {
+      position: absolute; inset: 0; z-index: 6;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(6,5,3,0.30);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .buffer-overlay.show {
+      opacity: 1; visibility: visible;
+    }
+    .buffer-spinner {
+      width: 46px; height: 46px; border-radius: 50%;
+      border: 3px solid rgba(248,228,160,0.18);
+      border-top-color: var(--gold-2);
+      border-right-color: var(--gold-3);
+      box-shadow: 0 0 24px -4px rgba(200,146,42,0.55);
+      animation: bufferSpin 0.85s linear infinite;
+    }
+    @keyframes bufferSpin {
+      to { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .buffer-spinner { animation-duration: 1.6s; }
+    }
+
     /* ── LANDSCAPE TOGGLE ── */
     .landscape-btn {
       position: absolute; top: 14px; right: 14px; z-index: 10;
@@ -895,13 +921,18 @@
 
     <!-- VIDEO COLUMN -->
     <div class="video-col">
-      <video id="mainVideo" src="{{file_url}}" preload="metadata" playsinline></video>
+      <video id="mainVideo" src="{{file_url}}" preload="auto" playsinline></video>
 
       <span class="frame-corner tl" aria-hidden="true"></span>
       <span class="frame-corner tr" aria-hidden="true"></span>
       <span class="frame-corner bl" aria-hidden="true"></span>
       <span class="frame-corner br" aria-hidden="true"></span>
       <div class="video-vignette" aria-hidden="true"></div>
+
+      <!-- Buffering spinner overlay -->
+      <div class="buffer-overlay" id="bufferOverlay" aria-hidden="true">
+        <div class="buffer-spinner"></div>
+      </div>
 
       <!-- Landscape toggle -->
       <button class="landscape-btn" id="landscapeBtn" onclick="toggleLandscape()" aria-pressed="false">
@@ -1008,9 +1039,9 @@
       <!-- Actions -->
       <div class="actions">
         <div class="section-label">Download</div>
-        <a class="dl-btn" href="{{file_url}}" download>
-          <span class="dl-icon-wrap"><i class="fa-solid fa-download"></i></span>
-          Fast Download
+        <a class="dl-btn" id="dlBtn" href="{{file_url}}" download onclick="handleDownload(event)">
+          <span class="dl-icon-wrap" id="dlIconWrap"><i class="fa-solid fa-download" id="dlIcon"></i></span>
+          <span id="dlLabel">Fast Download</span>
         </a>
 
         <div class="section-label">Open in App</div>
@@ -1223,6 +1254,20 @@ video.addEventListener('loadedmetadata', () => {
   updateAudioTracks();
 });
 
+// Buffering spinner — shows while the browser is waiting for data,
+// hides as soon as playback can resume.
+const bufferOverlay = document.getElementById('bufferOverlay');
+function showBuffer() { bufferOverlay.classList.add('show'); }
+function hideBuffer() { bufferOverlay.classList.remove('show'); }
+video.addEventListener('waiting',   showBuffer);
+video.addEventListener('seeking',   showBuffer);
+video.addEventListener('playing',   hideBuffer);
+video.addEventListener('canplay',   hideBuffer);
+video.addEventListener('seeked',    hideBuffer);
+video.addEventListener('pause',     hideBuffer);
+video.addEventListener('ended',     hideBuffer);
+video.addEventListener('error',     hideBuffer);
+
 // Play/pause
 function togglePlay() {
   video.paused ? video.play() : video.pause();
@@ -1374,6 +1419,47 @@ function updateAudioTracks() {
 function toggleAudioPanel() {
   document.getElementById('audioPanel').classList.toggle('open');
 }
+
+// ── DOWNLOAD HANDLER ──
+  // Previous approach used fetch().then(blob) which silently buffers the
+  // ENTIRE file into memory before anything happens — for large video files
+  // this can take a long time with zero feedback, looking "stuck" on
+  // Preparing. It also fails outright if the file host doesn't send
+  // permissive CORS headers.
+  //
+  // Fix: hand off to the browser's native download immediately via a
+  // same-tab navigation with the `download` attribute already on the link.
+  // The browser shows its own real download progress/percentage, supports
+  // pause/resume, and doesn't need the whole file in memory first.
+  function handleDownload(e) {
+    e.preventDefault();
+    const btn   = document.getElementById('dlBtn');
+    const label = document.getElementById('dlLabel');
+    const icon  = document.getElementById('dlIcon');
+
+    if (btn.dataset.loading) return;
+    btn.dataset.loading = '1';
+    label.textContent = 'Starting…';
+    icon.className = 'fa-solid fa-spinner fa-spin';
+
+    // Trigger the actual download — browser takes over from here with its
+    // own download manager / progress UI.
+    const a = document.createElement('a');
+    a.href = rawUrl;
+    a.download = btn.getAttribute('download') || fileName || 'video';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    label.textContent = 'Download Started!';
+    icon.className = 'fa-solid fa-circle-check';
+    showToast('Check your browser downloads / notifications for progress.');
+    setTimeout(() => {
+      label.textContent = 'Fast Download';
+      icon.className = 'fa-solid fa-download';
+      delete btn.dataset.loading;
+    }, 3000);
+  }
 
 // Keyboard
 document.addEventListener('keydown', e => {
