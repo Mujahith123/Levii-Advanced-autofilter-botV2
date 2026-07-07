@@ -32,6 +32,10 @@ async def _is_forwarded(_, __, message):
 is_forwarded = filters.create(_is_forwarded)
 # ──────────────────────────────────────────────────────────────────────────────
 
+async def _is_not_a_command(_, __, message):
+    return not (message.text and message.text.startswith("/"))
+
+is_not_a_command = filters.create(_is_not_a_command)
 
 @Client.on_callback_query(filters.regex(r'^index'))
 async def index_files(bot, query):
@@ -71,7 +75,7 @@ async def index_files(bot, query):
 # Use is_forwarded (robust multi-attribute check) instead of filters.forwarded
 @Client.on_message(
     (is_forwarded | (filters.regex(r"(https://)?(t\.me/|telegram\.me/|telegram\.dog/)(c/)?(\d+|[a-zA-Z_0-9]+)/(\d+)$") & filters.text))
-    & filters.private & filters.incoming
+    & filters.private & filters.incoming & is_not_a_command
 )
 async def send_for_index(bot, message):
     if message.text:
