@@ -43,6 +43,13 @@ from plugins.new_features import (
 
 logger = logging.getLogger(__name__)
 
+async def _is_eligible_for_pm_search(_, __, message: Message) -> bool:
+    text = message.text or message.caption
+    if not text or text.startswith("/"):
+        return False
+    if message.from_user and _has_active_collection_session(message.from_user.id):
+        return False
+    return True
 
 def _get_fresh():
     mod = sys.modules.get("plugins.pm_filter")
@@ -78,7 +85,13 @@ def _clean_search(raw_text):
     return search
 
 
-@Client.on_message(filters.private & filters.incoming & ~filters.bot & ~filters.me)
+@Client.on_message(
+    filters.private
+    & filters.incoming
+    & ~filters.bot
+    & ~filters.me
+    & filters.create(_is_eligible_for_pm_search)
+)
 async def pm_handler(client: Client, message: Message):
     try:
         # Skip forwarded messages — index.py handles them (channel-link indexing flow)
